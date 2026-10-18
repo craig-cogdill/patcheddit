@@ -31,6 +31,7 @@ public final class FixThumbnailsPatch {
                 thumbnailField = field;
             }
             Object value = field.get(link);
+            android.util.Log.i("FixThumbnails", "thumbnail=" + value);
             if (value instanceof String) {
                 String url = (String) value;
                 if (url.indexOf("&amp;") >= 0) {
