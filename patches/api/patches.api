@@ -55,6 +55,10 @@ public final class app/morphe/patches/reddit/customclients/SpoofClientPatchKt {
 	public static synthetic fun spoofClientPatch$default (Ljava/lang/String;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lapp/morphe/patcher/patch/BytecodePatch;
 }
 
+public final class app/morphe/patches/reddit/customclients/baconreader/ads/DisableAdsPatchKt {
+	public static final fun getDisableAdsPatch ()Lapp/morphe/patcher/patch/BytecodePatch;
+}
+
 public final class app/morphe/patches/reddit/customclients/baconreader/api/SpoofClientPatchKt {
 	public static final fun getSpoofClientPatch ()Lapp/morphe/patcher/patch/BytecodePatch;
 }
