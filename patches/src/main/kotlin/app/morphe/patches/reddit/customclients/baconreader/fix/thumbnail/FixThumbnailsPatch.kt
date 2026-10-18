@@ -7,7 +7,7 @@
 
 package app.morphe.patches.reddit.customclients.baconreader.fix.thumbnail
 
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patches.reddit.customclients.baconreader.BaconReaderCompatible
@@ -30,24 +30,20 @@ val fixThumbnailsPatch = bytecodePatch(
 
     compatibleWith(*BaconReaderCompatible)
 
-    // Reddit HTML-escapes '&' in the thumbnail field. Unescape it and write it back
-    // to the Link object, so every later reader of link.thumbnail sees the fixed URL.
+    // Reddit HTML-escapes '&' in the thumbnail field. Right before the method reads
+    // link.thumbnail, hand the Link object to the extension, which unescapes the field
+    // in place. The object register is taken from the read itself, so no assumption is
+    // made about which register holds the Link (the compiler reuses p0 for the result).
     execute {
         canShowThumbnailFingerprint.method.apply {
             val index = indexOfFirstInstructionOrThrow {
                 opcode == Opcode.IGET_OBJECT && getReference<FieldReference>()?.name == "thumbnail"
             }
-            val instruction = getInstruction<TwoRegisterInstruction>(index)
-            val urlRegister = instruction.registerA
-            val linkRegister = instruction.registerB
+            val linkRegister = getInstruction<TwoRegisterInstruction>(index).registerB
 
-            addInstructions(
-                index + 1,
-                """
-                    invoke-static { v$urlRegister }, $EXTENSION_CLASS_DESCRIPTOR->fixUrl(Ljava/lang/String;)Ljava/lang/String;
-                    move-result-object v$urlRegister
-                    iput-object v$urlRegister, v$linkRegister, Lcom/onelouder/baconreader/reddit/Link;->thumbnail:Ljava/lang/String;
-                """
+            addInstruction(
+                index,
+                "invoke-static { v$linkRegister }, $EXTENSION_CLASS_DESCRIPTOR->fixLink(Ljava/lang/Object;)V"
             )
         }
     }
