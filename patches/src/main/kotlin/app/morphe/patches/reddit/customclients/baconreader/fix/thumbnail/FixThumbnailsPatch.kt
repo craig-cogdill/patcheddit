@@ -7,7 +7,7 @@
 
 package app.morphe.patches.reddit.customclients.baconreader.fix.thumbnail
 
-import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
+import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patches.reddit.customclients.baconreader.BaconReaderCompatible
@@ -41,7 +41,9 @@ val fixThumbnailsPatch = bytecodePatch(
             }
             val linkRegister = getInstruction<TwoRegisterInstruction>(index).registerB
 
-            addInstruction(
+            // The read is a branch target (both NSFW paths jump to it). Insert at the
+            // control-flow label so the jumps land on the hook, not past it.
+            addInstructionsAtControlFlowLabel(
                 index,
                 "invoke-static { v$linkRegister }, $EXTENSION_CLASS_DESCRIPTOR->fixLink(Ljava/lang/Object;)V"
             )
