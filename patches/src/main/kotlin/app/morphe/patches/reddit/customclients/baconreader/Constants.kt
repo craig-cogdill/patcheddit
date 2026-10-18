@@ -10,15 +10,16 @@ package app.morphe.patches.reddit.customclients.baconreader
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
 
-internal val BaconReaderCompatible = arrayOf(
+internal val BaconReaderFreeCompatible = arrayOf(
     Compatibility(
         name = "BaconReader",
         packageName = "com.onelouder.baconreader",
         targets = listOf(AppTarget(version = "6.1.4"))
-    ),
-    Compatibility(
-        name = "BaconReader Premium",
-        packageName = "com.onelouder.baconreader.premium",
-        targets = listOf(AppTarget(version = "6.1.4"))
     )
+)
+
+internal val BaconReaderCompatible = BaconReaderFreeCompatible + Compatibility(
+    name = "BaconReader Premium",
+    packageName = "com.onelouder.baconreader.premium",
+    targets = listOf(AppTarget(version = "6.1.4"))
 )
