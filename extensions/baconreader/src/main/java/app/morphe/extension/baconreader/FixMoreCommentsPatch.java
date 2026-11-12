@@ -32,7 +32,7 @@ import java.util.Set;
  *
  * This hook runs at the start of RedditApi.httpRequest(). For api/morechildren it loads
  * each hidden comment from the normal comment permalink instead (one GET per comment,
- * which also returns that comment's replies), then builds a response in the
+ * with its parent chain for the correct depth, which also returns that comment's replies), then builds a response in the
  * morechildren shape the app already parses. Every other request passes through.
  */
 public final class FixMoreCommentsPatch {
@@ -73,6 +73,9 @@ public final class FixMoreCommentsPatch {
                 if (id != null && !id.isEmpty()) targetIds.add(id);
             }
             if (targetIds.isEmpty()) return null;
+            Log.i(TAG, "start post=" + postId + " children=" + targetIds.size()
+                    + " sort=" + params.get("sort") + " token=" + (sessionToken != null));
+            long started = System.currentTimeMillis();
 
             Object getMethod = enumConstant(requestMethod, "GET");
             Method httpRequest = httpRequest(context, requestMethod, sessionToken);
@@ -93,20 +96,24 @@ public final class FixMoreCommentsPatch {
                 requests++;
 
                 Map<String, String> query = new HashMap<>();
-                query.put("context", "0");
+                // Ask for the parent chain too. Reddit then numbers "depth" from the top-level
+                // comment, and the app indents each comment by that number.
+                query.put("context", "8");
                 String sort = params.get("sort");
                 if (sort != null && !sort.isEmpty()) query.put("sort", sort);
 
+                long t0 = System.currentTimeMillis();
                 String body = invoke(httpRequest, context, getMethod,
                         "comments/" + postId + "/-/" + childId + "/.json", query, sessionToken);
+                Log.i(TAG, "child " + childId + " " + (System.currentTimeMillis() - t0) + "ms");
 
                 JSONArray listing = new JSONArray(body);
                 JSONArray focused = listing.getJSONObject(1).getJSONObject("data").getJSONArray("children");
                 if (focused.length() == 0) continue; // Deleted or removed.
 
-                JSONObject thing = focused.getJSONObject(0);
+                JSONObject thing = findComment(focused.getJSONObject(0), childId);
+                if (thing == null) continue; // Deleted or removed.
                 JSONObject data = thing.getJSONObject("data");
-                if (!childId.equals(data.optString("id"))) continue;
                 if (firstParentId == null) firstParentId = data.optString("parent_id", null);
 
                 flattenThing(thing, emittedIds, emittedNames, things);
@@ -128,11 +135,14 @@ public final class FixMoreCommentsPatch {
             JSONObject json = new JSONObject()
                     .put("errors", new JSONArray())
                     .put("data", new JSONObject().put("things", things));
-            return new JSONObject().put("json", json).toString();
+            String result = new JSONObject().put("json", json).toString();
+            Log.i(TAG, "done requests=" + requests + " things=" + things.length() + " leftover="
+                    + leftover.size() + " " + (System.currentTimeMillis() - started) + "ms");
+            return result;
         } catch (IOException e) {
             Log.w(TAG, "Loading hidden comments failed", e);
             throw e;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // Unexpected shape or reflection failure. Fall back to the app's own request.
             Log.e(TAG, "Could not load hidden comments", e);
             return null;
@@ -168,6 +178,25 @@ public final class FixMoreCommentsPatch {
         } else if ("more".equals(kind) && emittedNames.contains(data.optString("parent_id"))) {
             output.put(thing);
         }
+    }
+
+    /**
+     * The response starts at the oldest parent. Walk down its replies to the comment asked for.
+     */
+    private static JSONObject findComment(JSONObject thing, String id) throws JSONException {
+        if (!"t1".equals(thing.optString("kind"))) return null;
+        JSONObject data = thing.getJSONObject("data");
+        if (id.equals(data.optString("id"))) return thing;
+        Object replies = data.opt("replies");
+        if (!(replies instanceof JSONObject)) return null;
+        JSONObject repliesData = ((JSONObject) replies).optJSONObject("data");
+        JSONArray children = repliesData == null ? null : repliesData.optJSONArray("children");
+        if (children == null) return null;
+        for (int i = 0; i < children.length(); i++) {
+            JSONObject found = findComment(children.getJSONObject(i), id);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     private static Method httpRequest(Object context, Object requestMethod, Object sessionToken)
