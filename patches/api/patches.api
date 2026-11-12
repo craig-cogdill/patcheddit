@@ -63,6 +63,10 @@ public final class app/morphe/patches/reddit/customclients/baconreader/api/Spoof
 	public static final fun getSpoofClientPatch ()Lapp/morphe/patcher/patch/BytecodePatch;
 }
 
+public final class app/morphe/patches/reddit/customclients/baconreader/fix/morecomments/FixMoreCommentsPatchKt {
+	public static final fun getFixMoreCommentsPatch ()Lapp/morphe/patcher/patch/BytecodePatch;
+}
+
 public final class app/morphe/patches/reddit/customclients/baconreader/fix/redgifs/FixRedgifsApiPatchKt {
 	public static final fun getFixRedgifsApi ()Lapp/morphe/patcher/patch/BytecodePatch;
 }
