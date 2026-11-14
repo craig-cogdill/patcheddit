@@ -22,6 +22,10 @@ public final class app/morphe/patches/all/misc/transformation/TransformInstructi
 	public static final fun transformInstructionsPatch (Lkotlin/jvm/functions/Function4;Lkotlin/jvm/functions/Function2;)Lapp/morphe/patcher/patch/BytecodePatch;
 }
 
+public final class app/morphe/patches/goodsuniteus/ads/RemoveAdsPatchKt {
+	public static final fun getRemoveAdsPatch ()Lapp/morphe/patcher/patch/BytecodePatch;
+}
+
 public final class app/morphe/patches/reddit/ad/banner/HideBannerPatchKt {
 	public static final fun getHideBannerPatch ()Lapp/morphe/patcher/patch/ResourcePatch;
 }
